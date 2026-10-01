@@ -94,10 +94,45 @@ só ele a abre). A voz vira texto e é apagada.
 
 ## Como apagar funciona
 
-Apagar o conteúdo de um humano é apagar as linhas cifradas. Apagar a
-**caixinha** de recuperação revoga o código do e-mail: sem ela, o código não
-abre mais nada. Apagar todos os embrulhos torna o que restar (um backup, por
-exemplo) irrecuperável para todo mundo, inclusive para nós.
+Há dois jeitos de apagar, e cada um faz exatamente o que está aqui — o que não está listado não é
+prometido.
+
+**1. O humano apaga os dados dele num produto** (a tela "Excluir meus dados"). Uma função do banco
+(`excluir_dados_do_humano_no_produto`), numa única transação, apaga daquele humano **naquele produto**:
+as mensagens e conversas, os percursos, as respostas, as descobertas, as pendências, as liberações de
+arquivos e de caminhos e, na personalidade simulada, as conversas e mensagens. Os pedidos à IA (`requisicoes_ia`)
+perdem o vínculo com o humano **e o texto** (a entrada, a saída, o erro e o endereço da imagem): o custo
+fica, o conteúdo não. Depois da transação, o servidor apaga a pasta do humano naquele produto no Spaces (o
+arquivo personalizado, a selfie e qualquer voz cifrada ainda pendente) — lista, apaga e lista de novo até a
+pasta voltar vazia; se o Spaces recusar um arquivo, a exclusão **não** se declara concluída. Nada disso pede o
+cofre aberto: as linhas cifradas saem como saem as claras, sem serem lidas.
+
+**2. A linha do humano é apagada** (por quem administra o banco; nenhuma tela faz isto hoje). O cofre, os
+embrulhos (passkey e senha), os desbloqueios e o registro "Quem leu" caem junto, por cascata
+(`ON DELETE CASCADE`) — e também a sessão, a conta do provedor, as passkeys, os acessos e as exclusões. Antes
+de a linha sair, um gatilho esvazia o texto dos pedidos à IA. Quem apaga a linha também apaga a pasta dele no
+Spaces. **Sem a chave do cofre e sem os embrulhos, qualquer cópia do conteúdo cifrado que tenha sobrado num
+backup é ilegível para sempre — para todo mundo, inclusive para nós.**
+
+**O que NÃO é apagado quando o humano apaga os dados de um produto, e por quê:** o cofre e o registro "Quem
+leu" (são do humano, não do produto; o cofre guarda o que está nos outros produtos, e o registro prova o que
+já aconteceu); o acesso ao produto e a prova do aceite da política (obrigação legal); a contagem de
+percursos que o humano já usou (direito de acesso); e o recibo.
+
+**O recibo.** Toda exclusão gera um recibo: a data, o produto, **só contagens por tabela** (nunca uma palavra
+do que o humano escreveu), a versão do módulo do cofre em uso (`privacidade/v1`) e o SHA-256 do recibo. O
+humano o vê na tela ao fim, recebe por e-mail e pode conferir o código depois; o servidor guarda o mesmo
+código em `exclusoes.recibo_hash`. Gerar o recibo não precisa do cofre aberto — nada nele vem de dentro
+dele. O texto que o hash resume é este JSON compacto, com as chaves nesta ordem e os itens em ordem
+alfabética:
+
+```
+{"versao_do_recibo":1,"exclusao_id":"<uuid>","produto":"<slug>","concluida_em":"2026-10-01T09:33:20Z",
+ "itens":{"arquivos":0,"mensagens":12,"respostas":3},"modulo":"privacidade/v1"}
+```
+
+(`concluida_em` em UTC, em segundos; o JSON real não tem quebra de linha.) Quem tiver o recibo refaz a
+conta com qualquer SHA-256 e compara.
 
 ## Os limites honestos
 
@@ -115,6 +150,9 @@ exemplo) irrecuperável para todo mundo, inclusive para nós.
 - Uma ordem judicial não obtém conteúdo (não há chave em repouso), só os
   registros de acesso e o texto cifrado.
 - Um navegador comprometido, ou uma extensão maliciosa, vê o que o humano vê.
+- As cópias do banco (o despejo semanal e o backup do provedor do banco) levam as linhas **como estão no
+  banco**: cifradas, para tudo o que foi gravado depois do cofre existir. O que foi gravado antes dele
+  continua legível nessas cópias até ser apagado, e as cópias antigas só saem pela rotação (oito semanas).
 - Durante a transcrição existe uma cópia temporária do áudio, em claro e com
   endereço assinado de poucos minutos, para a IA conseguir ouvi-lo. Ela é
   apagada ao fim da chamada; se o apagar falhar, o dono do sistema é avisado.
