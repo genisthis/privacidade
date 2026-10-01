@@ -166,3 +166,28 @@ conta com qualquer SHA-256 e compara.
 adulteração, chave errada, contexto trocado, resposta errada, código sem
 resposta, resposta sem código, sem a parte do servidor, caixinha apagada,
 normalização e a trava de que o módulo é autocontido.
+
+## Como conferir
+
+O mesmo diretório que roda no servidor é publicado, com histórico só dele,
+num repositório público (`genisthis/privacidade`). Para conferir que o que
+está lá é idêntico ao que roda:
+
+1. Peça o hash que o servidor declara: `GET /api/privacidade/versao`
+   (campo do hash do diretório; a página `/privacidade/tecnico` mostra o mesmo).
+2. Baixe o repositório público e refaça o hash a partir de fora, na raiz dele:
+
+   ```
+   find . -type f -not -path './.git/*' -not -name '.*' | sed 's|^\./||' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256
+   ```
+
+   (É o mesmo comando da página técnica, com `cd privacidade` trocado por estar
+   já dentro do repositório publicado, e excluindo `.git/`.)
+3. Se os dois hashes forem iguais, o código público é o que está rodando. Se
+   forem diferentes, a publicação ainda não aconteceu para a versão que roda,
+   ou algo está errado: o hash do servidor é o que vale como prova de
+   incoerência.
+
+O repositório só passa a existir quando o dono do sistema o cria e configura
+a publicação (workflow `.github/workflows/publicar-privacidade.yml`, segredo
+`PRIVACIDADE_PUBLICAR_TOKEN`); até lá o workflow termina sem fazer nada.
