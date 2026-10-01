@@ -80,6 +80,18 @@ percurso. Também o que é do autor, não do humano. A lista, tabela a tabela, �
 mantida na documentação do projeto. Este módulo não conhece tabelas: ele só
 cifra o que lhe entregam.
 
+## A voz do humano
+
+Quando o humano responde falando, a gravação é cifrada com a chave do cofre
+dele assim que chega (a mesma cifra `v1`, com o contexto `audio:<humano>:<resposta>`) e
+guardada cifrada; o armazenamento nunca vê o áudio em claro. Para a IA ouvir, o servidor
+abre a gravação com o cofre aberto e faz uma cópia temporária, que é apagada
+logo depois da chamada, dê certo ou não. Quando a IA devolve o texto e o texto
+está gravado (cifrado) no cofre, **a gravação é apagada e o cofre registra
+"sua gravação foi transcrita e apagada"**. Se a transcrição falha, a gravação
+fica, cifrada, até uma nova tentativa funcionar (só com o cofre aberto, porque
+só ele a abre). A voz vira texto e é apagada.
+
 ## Como apagar funciona
 
 Apagar o conteúdo de um humano é apagar as linhas cifradas. Apagar a
@@ -103,6 +115,9 @@ exemplo) irrecuperável para todo mundo, inclusive para nós.
 - Uma ordem judicial não obtém conteúdo (não há chave em repouso), só os
   registros de acesso e o texto cifrado.
 - Um navegador comprometido, ou uma extensão maliciosa, vê o que o humano vê.
+- Durante a transcrição existe uma cópia temporária do áudio, em claro e com
+  endereço assinado de poucos minutos, para a IA conseguir ouvi-lo. Ela é
+  apagada ao fim da chamada; se o apagar falhar, o dono do sistema é avisado.
 - Se o código deste módulo mudar, quem já gravou precisa que o formato antigo
   (`v1`) continue abrindo: o prefixo existe para isso.
 
