@@ -1,5 +1,15 @@
 # privacidade/ — o cofre do humano
 
+> **In short (English).** This directory is the whole cryptographic core of GenIsThis' "vault": the code that
+> locks everything intimate a person writes, says or shows. Content is encrypted with AES-256-GCM under a 256-bit key
+> that is generated in the person's browser and never stored in the clear; the server only keeps that key wrapped by
+> the person's passkey, vault password and recovery path. It has no dependencies, imports nothing from the rest of the
+> product, reads no environment, and talks to no database or network (`autocontido.test.ts` enforces this). The
+> servers see the key and the plaintext only inside a request made by that very person, because the AI has to read the
+> text to serve them. The honest limits are listed below, and the full, plain-language explanation of what we collect,
+> why, where it lives, who can see it and when it is erased is at **https://genisthis.com/seguranca**
+> (a plain-text version for AIs: https://genisthis.com/seguranca.md). The rest of this file is in Portuguese.
+
 Este diretório é toda a matemática que guarda o que é íntimo de um humano.
 Não importa nada do resto do projeto, não lê ambiente, não fala com banco nem
 com rede, não escreve em log (`autocontido.test.ts` trava isso). Roda igual no
@@ -85,12 +95,30 @@ cifra o que lhe entregam.
 Quando o humano responde falando, a gravação é cifrada com a chave do cofre
 dele assim que chega (a mesma cifra `v1`, com o contexto `audio:<humano>:<resposta>`) e
 guardada cifrada; o armazenamento nunca vê o áudio em claro. Para a IA ouvir, o servidor
-abre a gravação com o cofre aberto e faz uma cópia temporária, que é apagada
-logo depois da chamada, dê certo ou não. Quando a IA devolve o texto e o texto
+abre a gravação com o cofre aberto e faz uma cópia temporária, num caminho neutro
+que não leva o id de ninguém (`temporario/<uuid>.<ext>`), que é apagada logo depois
+da chamada, dê certo ou não. Quando a IA devolve o texto e o texto
 está gravado (cifrado) no cofre, **a gravação é apagada e o cofre registra
 "sua gravação foi transcrita e apagada"**. Se a transcrição falha, a gravação
 fica, cifrada, até uma nova tentativa funcionar (só com o cofre aberto, porque
 só ele a abre). A voz vira texto e é apagada.
+
+## A selfie do humano
+
+A foto do rosto é a coisa mais íntima que o produto recebe, e **não fica guardada**. Ao chegar, ela é
+cifrada com a chave do cofre (o contexto é `selfie:<humano>:<resposta>`) e só então toca o armazenamento.
+Para a IA olhar, o servidor faz a mesma cópia temporária da voz — num caminho neutro, sem o id do humano,
+apagada ao fim da chamada. A IA diz se a foto serve; **só esse resultado fica, cifrado**. Logo em seguida a
+selfie cifrada é apagada, sirva ou não, e a anterior também — e o cofre registra "sua selfie foi analisada e
+apagada". Como a foto não fica, o produto não consegue criar imagens que usem o rosto da pessoa.
+
+## A narração que cita o humano
+
+Quando o autor escreve uma narração que cita o que o humano respondeu, o áudio gerado diz o que ele escreveu —
+então é cifrado como o resto (contexto `narracao:<humano>:<requisição>`), guardado na pasta dele, e só toca por
+uma rota que exige a sessão dele e o cofre aberto. Voltar à mesma tela toca a mesma narração; recomeçar a
+jornada gera outra, e a antiga continua guardada, cifrada, até o humano apagar os dados. A narração que não cita
+ninguém é igual para todos e não é íntima: continua num cache público do produto.
 
 ## Como apagar funciona
 
@@ -153,9 +181,10 @@ conta com qualquer SHA-256 e compara.
 - As cópias do banco (o despejo semanal e o backup do provedor do banco) levam as linhas **como estão no
   banco**: cifradas, para tudo o que foi gravado depois do cofre existir. O que foi gravado antes dele
   continua legível nessas cópias até ser apagado, e as cópias antigas só saem pela rotação (oito semanas).
-- Durante a transcrição existe uma cópia temporária do áudio, em claro e com
-  endereço assinado de poucos minutos, para a IA conseguir ouvi-lo. Ela é
-  apagada ao fim da chamada; se o apagar falhar, o dono do sistema é avisado.
+- Durante a transcrição da voz, e durante a análise da selfie, existe uma cópia temporária, em claro, com endereço
+  assinado de poucos minutos, num caminho que não leva o id de ninguém, para a IA conseguir ouvi-la ou vê-la. Ela
+  é apagada ao fim da chamada; se o apagar falhar, o dono do sistema é avisado, e antes da próxima cópia as que
+  tiverem mais de quinze minutos são varridas.
 - Se o código deste módulo mudar, quem já gravou precisa que o formato antigo
   (`v1`) continue abrindo: o prefixo existe para isso.
 
@@ -174,7 +203,7 @@ num repositório público (`genisthis/privacidade`). Para conferir que o que
 está lá é idêntico ao que roda:
 
 1. Peça o hash que o servidor declara: `GET /api/privacidade/versao`
-   (campo do hash do diretório; a página `/privacidade/tecnico` mostra o mesmo).
+   (campo do hash do diretório; a página `/seguranca` mostra o mesmo).
 2. Baixe o repositório público e refaça o hash a partir de fora, na raiz dele:
 
    ```
